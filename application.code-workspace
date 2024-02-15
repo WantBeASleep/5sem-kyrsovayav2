@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "./client"
+		},
+		{
+			"path": "./manager"
+		},
+		{
+			"path": "./klaster"
+		},
+		{
+			"path": "./worker"
+		},
+		{
+			"path": "./lib"
+		}
+	],
+	"settings": {}
+}
