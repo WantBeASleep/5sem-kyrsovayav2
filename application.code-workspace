@@ -7,14 +7,14 @@
 			"path": "./manager"
 		},
 		{
-			"path": "./klaster"
+			"path": "./cluster"
 		},
 		{
 			"path": "./worker"
 		},
 		{
 			"path": "./lib"
-		}
+		},
 	],
 	"settings": {}
 }

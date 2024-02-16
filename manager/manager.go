@@ -1,93 +1,62 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"lib"
 	"net/http"
 	"os"
-	"sync/atomic"
-	"time"
+
+	"manager/client"
+	"manager/cluster"
+	"manager/diagnostic"
+
+	is "lib/infostructs"
+	mi "manager/minit"
 )
 
-var managerPort string
-var klasters map[int]*lib.Klaster
-var CurrentKlaster *lib.Klaster
+var ManagerPort string
+var Clusters map[int]*is.ClusterInfo
+var freeClusterReq chan chan *is.ClusterInfo
+var updateClusterReq chan *is.ClusterInfo
 
-func addKlaster(w http.ResponseWriter, r *http.Request) {
-	var newKlaster lib.Klaster
-	json.NewDecoder(r.Body).Decode(&newKlaster)
+func maddcluster(w http.ResponseWriter, r *http.Request) {
+	
+	fmt.Println("Добавление кластера")
 
-	klasters[newKlaster.Id] = &newKlaster
-	fmt.Println("New klaster add. Id:", newKlaster.Id)
+	cluster.Hander_maddcluster(updateClusterReq, r.Body)
 }
 
-func updateKlaster(w http.ResponseWriter, r *http.Request) {
-	var updateKlaster lib.UpdateKlaster
-	json.NewDecoder(r.Body).Decode(&updateKlaster)
+func mupdatecluster(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Обновление кластера")
 
-	atomic.StoreUint32(&klasters[updateKlaster.Id].AllCores, updateKlaster.AllCores)
-	atomic.StoreUint32(&klasters[updateKlaster.Id].FreeCores , updateKlaster.FreeCores)
+	cluster.Hander_mupdatecluster(updateClusterReq, r.Body)
 }
 
-func updateCurrentKlaster() {
-	ticker := time.NewTicker(500 * time.Millisecond)
+func msolveproblem(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Запрос на решение от клиента")
 
-	for {
-		<-ticker.C
-
-		CurrentKlaster = nil
-		for _, v := range klasters {
-			if CurrentKlaster == nil || atomic.LoadUint32(&v.FreeCores) > CurrentKlaster.FreeCores {
-				CurrentKlaster = v
-			}
-		}
-	}
-}
-
-func expr(w http.ResponseWriter, r *http.Request) {
-	responseKlaster, err := http.Post(fmt.Sprintf("http://localhost:%s/expr", CurrentKlaster.Port), "application/json", r.Body)
-	if err != nil {
-		fmt.Println("Команда \"От винта\"!")
-	}
-
-	responseManagerJson, err := io.ReadAll(responseKlaster.Body)
-	if err != nil {
-		fmt.Println("Укуси меня пчела")
-	}
-	responseKlaster.Body.Close()
-
+	exprResult := client.Handler_msolveproblem(r.Body, freeClusterReq)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(responseManagerJson)
+	w.Write(exprResult)
 }
 
-func getKlaster(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(klasters)
-	fmt.Println()
-	fmt.Println(CurrentKlaster)
+func showclusters(w http.ResponseWriter, r *http.Request) {
+	diagnostic.ShowClusters(Clusters)
 }
 
 func main() {
 	args := os.Args
 	if len(args) < 2 {
-		fmt.Println("Команда: go run manager.go <порт>")
-		return
+		panic("<порт>")
 	}
-	managerPort = args[1]
 
-	klasters = map[int]*lib.Klaster{}
-	go updateCurrentKlaster()
-	
-	
-	http.HandleFunc("/expr", expr)
-	
-	http.HandleFunc("/addklaster", addKlaster)
-	http.HandleFunc("/updateklaster", updateKlaster)
-	http.HandleFunc("/diagnostic/klasterslist", getKlaster)
-	
-	
-	fmt.Println("Manager started on port", managerPort)
-	http.ListenAndServe(fmt.Sprintf(":%s", managerPort), nil)
+	ManagerPort, Clusters, freeClusterReq, updateClusterReq = mi.ManagerInit(args)
+
+	http.HandleFunc("/msolveproblem", msolveproblem)
+
+	http.HandleFunc("/maddcluster", maddcluster)
+	http.HandleFunc("/mupdatecluster", mupdatecluster)
+	http.HandleFunc("/diagnostic/showclusters", showclusters)
+
+	http.ListenAndServe(fmt.Sprintf(":%s", ManagerPort), nil)
 }

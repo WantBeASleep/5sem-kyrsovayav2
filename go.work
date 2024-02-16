@@ -3,7 +3,7 @@ go 1.22.0
 use (
 	.
 	./client
-	./klaster
+	./cluster
 	./lib
 	./manager
 	./worker

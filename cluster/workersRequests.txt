@@ -1,0 +1,39 @@
+package main
+
+import(
+	"lib"
+	"sync/atomic"
+	"net/http"
+	"bytes"
+	"fmt"
+	"encoding/json"
+)
+
+func UpdateReqToManager(klasterStatus *lib.Klaster) {
+	updateServerInfo := lib.UpdateKlaster{
+		Id: klasterStatus.Id,
+		FreeCores: atomic.LoadUint32(&klasterStatus.FreeCores),
+		AllCores: atomic.LoadUint32(&klasterStatus.AllCores),
+	}
+	updateServerInfoJson, _ := json.Marshal(updateServerInfo)
+	http.Post(fmt.Sprintf("http://localhost:%s/updateklaster", klasterStatus.ManagerPort), "application/json", bytes.NewReader(updateServerInfoJson))
+}
+
+func addWorker(klasterStatus *lib.Klaster, newWorker *lib.Worker, workerPool chan *lib.Worker) {
+	klasterStatus.WorkersList[newWorker.Id] = newWorker
+	atomic.AddUint32(&klasterStatus.AllCores, uint32(newWorker.Cores))
+	atomic.AddUint32(&klasterStatus.FreeCores, uint32(newWorker.Cores))
+	workerPool <- newWorker
+	UpdateReqToManager(klasterStatus)
+}
+
+func freeWorker(klasterStatus *lib.Klaster, freeWorker lib.FreeWorkerSignal, workerPool chan *lib.Worker) {
+	atomic.AddUint32(&klasterStatus.FreeCores, uint32(klasterStatus.WorkersList[freeWorker.Id].Cores))
+	workerPool <- klasterStatus.WorkersList[freeWorker.Id]
+	UpdateReqToManager(klasterStatus)
+}
+
+func busyWorker(klasterStatus *lib.Klaster, freeWorker lib.BusyWorkerSignal, workerPool chan *lib.Worker) {
+	atomic.AddUint32(&klasterStatus.FreeCores, -uint32(klasterStatus.WorkersList[freeWorker.Id].Cores))
+	UpdateReqToManager(klasterStatus)
+}

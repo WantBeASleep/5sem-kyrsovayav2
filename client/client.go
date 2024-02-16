@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -10,12 +9,14 @@ import (
 func main() {
 	args := os.Args
 	if len(args) < 3 {
-		fmt.Println("Команда: go run client.go <порт> <кол-во запросов>")
-		return
+		panic("<порт> <кол-во запросов>")
 	}
 
 	port := args[1]
-	requests, _ := strconv.Atoi(args[2])
+	requests, err := strconv.Atoi(args[2])
+	if err != nil {
+		panic("ошибка конвертации кол-во запросов")
+	}
 
 	var wg sync.WaitGroup
 	for range requests {

@@ -1,0 +1,63 @@
+package main
+
+import (
+	"lib"
+	"sync/atomic"
+)
+
+func exprDisturbToWorkes(workersPool chan *lib.Worker, deferTasksPool chan lib.DeferKlasterToWorkerTask, clientTask lib.ClientTask) lib.Matrix {
+	Tree := lib.ParseExpr(clientTask.Expr)
+	Matrixes := clientTask.Data
+	lib.UpdateTreeStats(Tree, Matrixes)
+
+	ReadyMatrixes := map[string]*atomic.Bool{}
+	for k := range Matrixes {
+		ReadyMatrixes[k].Store(true)
+	}
+
+	Sender := NewTaskSender(workersPool, deferTasksPool)
+	Sender.NewTask()
+	
+	lastMatrixName := ""
+	cnter := 0
+	var finalSignal *chan bool
+
+	var dfs func(node lib.ASTNode, prevNode lib.ASTNode)
+	dfs = func(node lib.ASTNode, prevNode lib.ASTNode) {
+		cnter++
+		if x, ok := node.(*lib.BinaryOp); ok {
+			dfs(x.Left, node)
+			dfs(x.Right, node)
+
+			if x.GetCountOp() >= Sender.OpCount || (x == Tree.(*lib.BinaryOp) && cnter != 1) {
+				ReplaceLeaf := &lib.MatrixLeaf{
+					MatrixName: lib.GetRandString(100),
+					Size: x.GetMatrixSize(),
+				}
+				lastMatrixName = ReplaceLeaf.MatrixName
+				ReadyMatrixes[ReplaceLeaf.MatrixName].Store(false)
+				Matrixes[ReplaceLeaf.MatrixName] = lib.Matrix{
+					Size: x.GetMatrixSize(),
+				}
+
+				if x != Tree.(*lib.BinaryOp) {
+					if prevNode.(*lib.BinaryOp).Left == x {
+						prevNode.(*lib.BinaryOp).Left = ReplaceLeaf
+					} else {
+						prevNode.(*lib.BinaryOp).Right = ReplaceLeaf
+					}
+					lib.UpdateTreeStats(Tree, Matrixes)
+				}
+				
+				finalSignal = Sender.Send(x, Matrixes, ReadyMatrixes, ReplaceLeaf.MatrixName, x == Tree.(*lib.BinaryOp))
+				Sender.NewTask()		
+			}
+
+		}
+	}
+	dfs(Tree, Tree)
+	Sender.WorkerDrop()
+
+	<-*(finalSignal)
+	return Matrixes[lastMatrixName]
+}

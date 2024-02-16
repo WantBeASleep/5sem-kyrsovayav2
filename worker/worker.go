@@ -1,39 +1,36 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
+	gn "lib/generatelib"
+	
+	
 	"fmt"
-	"lib"
+	is "lib/infostructs"
 	"net/http"
 	"os"
-	"strconv"
+	"worker/winit"
 )
 
-var workerInfo lib.Worker
-var klasterPort string
+var workerInfo *is.WorkerInfo
+
+func wsolveproblem(w http.ResponseWriter, r *http.Request) {
+	mtrx := gn.GenerateRandMatrix(3, 3, 25)
+	mtrxjson, _ := json.Marshal(mtrx)
+
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(mtrxjson)
+}
 
 func main() {
 	args := os.Args
 	if len(args) < 5 {
-		fmt.Println("Используй gor worker.go <id> <кол-во ядер> <порт> <порт кластера>")
-		return
+		panic("<порт><порт кластера><id><кол-во ядер>")
 	}
+	workerInfo = winit.WorkerInit(args)
 
-	id, _ := strconv.Atoi(args[1])
-	cores, _ := strconv.Atoi(args[2])
-	workerPort := args[3]
-	klasterPort = args[4]
-
-	workerInfo = lib.Worker{
-		Port: workerPort,
-		Id: id,
-		Cores: cores,
-	}
-
-	workerInfoJson, _ := json.Marshal(workerInfo)
-	http.Post(fmt.Sprintf("http://localhost:%s/addworker", klasterPort), "application/json", bytes.NewReader(workerInfoJson))
-
-	
+	http.HandleFunc("/wsolveproblem", wsolveproblem)
 	http.ListenAndServe(fmt.Sprintf(":%s", workerInfo.Port), nil)
 }
