@@ -27,7 +27,7 @@ func ClusterInit(args []string) (*is.ClusterInfo, chan *is.WorkerInfo, chan ts.C
 	}
 
 	workersPool := make(chan *is.WorkerInfo, 50)
-	deferClusterWorkerTaskPool := make(chan ts.ClusterWorkerTask, 50)
+	deferClusterWorkerTaskPool := make(chan ts.ClusterWorkerTask, 1000000)
 	rq.SendRequest(managerPort, "maddcluster", clusterInfo)
 	go taskhandler.DeferTasksPoolHandler(deferClusterWorkerTaskPool, workersPool)
 	return clusterInfo, workersPool, deferClusterWorkerTaskPool

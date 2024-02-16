@@ -4,15 +4,12 @@ import (
 	"os"
 	"net/http"
 	"fmt"
-	"io"
-	"encoding/json"
 
 	is "lib/infostructs"
 	ts "lib/tasks"
-	gn "lib/generatelib"
 
-	
 	"cluster/cinit"
+	"cluster/taskhandler"
 	"cluster/workers"
 )
 
@@ -20,29 +17,6 @@ var clusterInfo *is.ClusterInfo
 var workersPool chan *is.WorkerInfo
 var deferClusterWorkerTaskPool chan ts.ClusterWorkerTask
 
-
-// func freeWorkerHandle(w http.ResponseWriter, r *http.Request) {
-// 	var fWorker lib.FreeWorkerSignal
-// 	json.NewDecoder(r.Body).Decode(&fWorker)
-// 	freeWorker(klasterStatus, fWorker, workersPool)
-// }
-
-// func busyWorkerHandle(w http.ResponseWriter, r *http.Request) {
-// 	var fWorker lib.BusyWorkerSignal
-// 	json.NewDecoder(r.Body).Decode(&fWorker)
-// 	busyWorker(klasterStatus, fWorker, workersPool)
-// }
-
-// func exprHandle(w http.ResponseWriter, r *http.Request) {
-// 	var clientReq lib.ClientTask
-// 	json.NewDecoder(r.Body).Decode(&clientReq)
-// 	resultOfExpr := exprDisturbToWorkes(workersPool, deferTasksPool, clientReq)
-// 	resultOfExprJson, _ := json.Marshal(resultOfExpr)
-	
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write(resultOfExprJson)
-// }
 
 func caddworker(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Добавление воркера в кластер")
@@ -52,24 +26,23 @@ func caddworker(w http.ResponseWriter, r *http.Request) {
 
 func cfreeworker(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Воркер выполнил свою работу и сообщил кластеру")
+
+	workers.Handler_cfreeworker(r.Body, clusterInfo, workersPool)
 }
 
 func cbusyworker(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Воркер взял свою работу и сообщил кластеру")
 
+	workers.Handler_cbusyworker(r.Body, clusterInfo, workersPool)
 }
 
 func csolveproblem(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Запрос на решение от менеджера:")
-	body, _ := io.ReadAll(r.Body)
-	fmt.Println(string(body))
+	fmt.Println("Запрос на решение от менеджера")
 
-	mtrx := gn.GenerateRandMatrix(3, 3, 25)
-	mtrxjson, _ := json.Marshal(mtrx)
-
-	
+	result := taskhandler.Handler_csolveproblem(workersPool, deferClusterWorkerTaskPool, r.Body)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(mtrxjson)
+	w.Write(result)
 }
 
 func main() {

@@ -11,7 +11,7 @@ func Handler_caddworker(reqData io.ReadCloser, clusterInfo *is.ClusterInfo, work
 	var newWorker is.WorkerInfo
 	err := json.NewDecoder(reqData).Decode(&newWorker)
 	if err != nil {
-		panic("Ошибка парса воркера на кластере")
+		panic("Ошибка парса воркера на кластере caddworker")
 	}
 
 	clusterInfo.AllCores += newWorker.Cores

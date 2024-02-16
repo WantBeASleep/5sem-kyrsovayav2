@@ -21,6 +21,7 @@ func DeferTasksPoolHandler(deferClusterWorkerTaskPool chan ts.ClusterWorkerTask,
 			rq.SendRequest(worker.Port, "wsolveproblem", deferTask.CWR, resultMatrix)
 			(*deferTask.AllMatrixes)[deferTask.ResultMatrixName] = *resultMatrix
 			(*deferTask.MatrixesAlertReady)[deferTask.ResultMatrixName]<-true
+			close((*deferTask.MatrixesAlertReady)[deferTask.ResultMatrixName])
 		}()
 	}
 }

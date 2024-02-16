@@ -18,6 +18,8 @@ func (task *ClusterWorkerTask) CheckReady() bool {
 	for name := range necessaryMatrixes {
 		if _, isOpen := <-(*task.MatrixesAlertReady)[name]; isOpen {
 			return false
+		} else {
+			task.CWR.Matrixes[name] = (*task.AllMatrixes)[name]
 		}
 	}
 	return true
