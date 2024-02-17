@@ -4,6 +4,7 @@ import (
 	is "lib/infostructs"
 	rq "lib/requests"
 	"strconv"
+	"worker/workpool"
 )
 
 func WorkerInit(args []string) *is.WorkerInfo {
@@ -25,6 +26,7 @@ func WorkerInit(args []string) *is.WorkerInfo {
 		Cores: cores,
 	}
 
+	workpool.StartPool()
 	rq.SendRequest(workerInfo.ClusterPort, "caddworker", workerInfo)
 	return &workerInfo
 }

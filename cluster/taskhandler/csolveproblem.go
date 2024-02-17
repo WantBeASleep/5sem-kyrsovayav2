@@ -1,14 +1,15 @@
 package taskhandler
 
 import (
-	is "lib/infostructs"
 	"encoding/json"
+	"fmt"
+	"io"
+	gn "lib/generatelib"
+	is "lib/infostructs"
+	mt "lib/matrixes"
 	rq "lib/requests"
 	ts "lib/tasks"
 	tr "lib/trees"
-	mt "lib/matrixes"
-	gn "lib/generatelib"
-	"io"
 )
 
 func Handler_csolveproblem(workersPool chan *is.WorkerInfo, deferClusterWorkerTaskPool chan ts.ClusterWorkerTask, reqData io.ReadCloser) []byte {
@@ -18,12 +19,14 @@ func Handler_csolveproblem(workersPool chan *is.WorkerInfo, deferClusterWorkerTa
 		panic("Ошибка парса задачи на кластере! csolveproblem")
 	}
 
-	tree := tr.ParseExpr(inputData.Expr)
 	matrixes := inputData.Matrixes
+	tree := tr.ParseExpr(inputData.Expr)
+	tr.UpdateTreeStats(tree, matrixes)
+	fmt.Println(tree.(*tr.BinaryOp))
+
 	matrixesAlertReady := map[string]chan bool{}
 	for k := range matrixes {
 		matrixesAlertReady[k] = make(chan bool, 1)
-		matrixesAlertReady[k] <- true
 		close(matrixesAlertReady[k])
 	}
 
@@ -57,7 +60,7 @@ func Handler_csolveproblem(workersPool chan *is.WorkerInfo, deferClusterWorkerTa
 					tr.UpdateTreeStats(tree, matrixes)
 				}
 
-				sender.Send(tree, matrixes, &matrixesAlertReady, lastName)
+				sender.Send(x, matrixes, &matrixesAlertReady, lastName)
 				sender.NewTask()
 			}
 		}

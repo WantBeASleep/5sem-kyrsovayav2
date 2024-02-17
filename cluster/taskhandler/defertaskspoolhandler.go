@@ -17,10 +17,9 @@ func DeferTasksPoolHandler(deferClusterWorkerTaskPool chan ts.ClusterWorkerTask,
 
 		worker := <-workersPool
 		go func(){
-			var resultMatrix *mt.Matrix
-			rq.SendRequest(worker.Port, "wsolveproblem", deferTask.CWR, resultMatrix)
-			(*deferTask.AllMatrixes)[deferTask.ResultMatrixName] = *resultMatrix
-			(*deferTask.MatrixesAlertReady)[deferTask.ResultMatrixName]<-true
+			var resultMatrix mt.Matrix
+			rq.SendRequest(worker.Port, "wsolveproblem", deferTask.CWR, &resultMatrix)
+			(*deferTask.AllMatrixes)[deferTask.ResultMatrixName] = resultMatrix
 			close((*deferTask.MatrixesAlertReady)[deferTask.ResultMatrixName])
 		}()
 	}

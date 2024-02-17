@@ -1,6 +1,7 @@
 package trees
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -105,6 +106,7 @@ func UpdateTreeStats(node ASTNode, data map[string]mt.Matrix) {
 			x.Size = data[x.MatrixName].Size
 		}
 	}
+	dfs(node)
 }
 
 func GetLeafsNames(root ASTNode) map[string]bool {
@@ -121,6 +123,38 @@ func GetLeafsNames(root ASTNode) map[string]bool {
 			answr[x.MatrixName] = true
 		}
 	}
+	dfs(root)
 
 	return answr
+}
+
+
+func UpparseJson(tree json.RawMessage) ASTNode {
+	var dfs func(json.RawMessage) ASTNode
+	dfs = func(node json.RawMessage) ASTNode {
+		var x map[string]json.RawMessage
+		err := json.Unmarshal(node, &x)
+		if err != nil {
+			panic("ошибка при распарсе на воркере(в dfs)")
+		}
+
+		if _, isLeaf := x["MatrixName"]; isLeaf {
+			var newLeaf MatrixLeaf
+			json.Unmarshal(x["MatrixName"], &newLeaf.MatrixName)
+			json.Unmarshal(x["Size"], &newLeaf.Size)
+			return &newLeaf
+		} else {
+			left := dfs(x["Left"])
+			right := dfs(x["Left"])
+
+			var newBin BinaryOp
+			json.Unmarshal(x["Op"], &newBin.Op)
+			newBin.Left = left
+			newBin.Right = right
+			json.Unmarshal(x["Size"], &newBin.Size)
+			json.Unmarshal(x["SubTreeCountOperations"], &newBin.SubTreeCountOperations)
+			return &newBin
+		}
+	}
+	return dfs(tree)
 }

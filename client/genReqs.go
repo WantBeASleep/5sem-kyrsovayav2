@@ -8,14 +8,14 @@ import (
 )
 
 const (
-	m int = 2
-	n int = 3
+	m int = 100
+	n int = 100
 )
 
 func getFormedTask() rq.ClientReq {
-	expr := "a+b"
+	expr := "a*b"
 	a := gn.GenerateRandMatrix(m, n, 100)
-	b := gn.GenerateRandMatrix(m, n, 100)
+	b := gn.GenerateRandMatrix(n, m, 100)
 	
 	h := map[string]mt.Matrix{
 		"a": a,

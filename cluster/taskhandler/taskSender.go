@@ -1,11 +1,12 @@
 package taskhandler
 
 import (
+	"fmt"
 	is "lib/infostructs"
-	ts "lib/tasks"
-	rq "lib/requests"
-	tr "lib/trees"
 	mt "lib/matrixes"
+	rq "lib/requests"
+	ts "lib/tasks"
+	tr "lib/trees"
 )
 
 const (
@@ -44,23 +45,29 @@ func (t *TaskSender) WorkerDrop() {
 	if x, ok := t.direction.(*is.WorkerInfo); ok {
 		t.workersPool <- x
 	}
+	t.direction = nil
 }
 
 func (t *TaskSender) Send(root tr.ASTNode, matrixes map[string]mt.Matrix, matrixesAlertReady *map[string]chan bool, resultMatrixName string) {
 	necessaryMatrixes := tr.GetLeafsNames(root)
+	fmt.Println(necessaryMatrixes)
+	fmt.Println(matrixes)
 	sendMatrix := map[string]mt.Matrix{}
-
+	
 	for k := range necessaryMatrixes {
 		if _, isNOTready := <-(*matrixesAlertReady)[k]; !isNOTready {
-			sendMatrix[k] = matrixes[k]
+			sendMatrix[k] = matrixes[k].Copy()
 			delete(necessaryMatrixes, k)
 		}
 	}
+	fmt.Println(necessaryMatrixes)
 
 	newReq := rq.ClusterWorkerReq{
 		Root: root,
 		Matrixes: sendMatrix,
 	}
+
+	fmt.Println(newReq)
 
 	if x, ok := t.direction.(*is.WorkerInfo); len(necessaryMatrixes) == 0 && ok {
 		wport := x.Port
@@ -69,7 +76,6 @@ func (t *TaskSender) Send(root tr.ASTNode, matrixes map[string]mt.Matrix, matrix
 			var resultMatrix mt.Matrix
 			rq.SendRequest(wport, "wsolveproblem", newReq, &resultMatrix)
 			matrixes[resultMatrixName] = resultMatrix
-			(*matrixesAlertReady)[resultMatrixName] <- true
 			close((*matrixesAlertReady)[resultMatrixName])
 		}()
 	} else {
