@@ -3,6 +3,7 @@ package winit
 import (
 	is "lib/infostructs"
 	rq "lib/requests"
+	"worker/workpool"
 	"strconv"
 )
 
@@ -24,6 +25,8 @@ func WorkerInit(args []string) *is.WorkerInfo {
 		Id: id,
 		Cores: cores,
 	}
+
+	workpool.StartPool(&workerInfo)
 
 	rq.SendRequest(workerInfo.ClusterPort, "caddworker", workerInfo)
 	return &workerInfo
