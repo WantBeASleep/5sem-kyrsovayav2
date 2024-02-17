@@ -63,9 +63,11 @@ func (t *TaskSender) Send(root tr.ASTNode, matrixes map[string]mt.Matrix, matrix
 	}
 
 	if x, ok := t.direction.(*is.WorkerInfo); len(necessaryMatrixes) == 0 && ok {
+		wport := x.Port
+		t.direction = nil
 		go func(){
 			var resultMatrix mt.Matrix
-			rq.SendRequest(x.Port, "wsolveproblem", newReq, &resultMatrix)
+			rq.SendRequest(wport, "wsolveproblem", newReq, &resultMatrix)
 			matrixes[resultMatrixName] = resultMatrix
 			(*matrixesAlertReady)[resultMatrixName] <- true
 			close((*matrixesAlertReady)[resultMatrixName])

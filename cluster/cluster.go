@@ -38,8 +38,9 @@ func cbusyworker(w http.ResponseWriter, r *http.Request) {
 
 func csolveproblem(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Запрос на решение от менеджера")
-
 	result := taskhandler.Handler_csolveproblem(workersPool, deferClusterWorkerTaskPool, r.Body)
+	fmt.Println("Воркер решил задачу, отправка ответа менеджеру")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(result)

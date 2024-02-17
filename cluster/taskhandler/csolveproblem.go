@@ -58,6 +58,7 @@ func Handler_csolveproblem(workersPool chan *is.WorkerInfo, deferClusterWorkerTa
 				}
 
 				sender.Send(tree, matrixes, &matrixesAlertReady, lastName)
+				sender.NewTask()
 			}
 		}
 	}
