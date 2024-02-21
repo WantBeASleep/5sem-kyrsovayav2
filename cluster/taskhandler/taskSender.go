@@ -1,7 +1,6 @@
 package taskhandler
 
 import (
-	"fmt"
 	is "lib/infostructs"
 	mt "lib/matrixes"
 	rq "lib/requests"
@@ -50,8 +49,6 @@ func (t *TaskSender) WorkerDrop() {
 
 func (t *TaskSender) Send(root tr.ASTNode, matrixes map[string]mt.Matrix, matrixesAlertReady *map[string]chan bool, resultMatrixName string) {
 	necessaryMatrixes := tr.GetLeafsNames(root)
-	fmt.Println(necessaryMatrixes)
-	fmt.Println(matrixes)
 	sendMatrix := map[string]mt.Matrix{}
 	
 	for k := range necessaryMatrixes {
@@ -60,14 +57,11 @@ func (t *TaskSender) Send(root tr.ASTNode, matrixes map[string]mt.Matrix, matrix
 			delete(necessaryMatrixes, k)
 		}
 	}
-	fmt.Println(necessaryMatrixes)
 
 	newReq := rq.ClusterWorkerReq{
 		Root: root,
 		Matrixes: sendMatrix,
 	}
-
-	fmt.Println(newReq)
 
 	if x, ok := t.direction.(*is.WorkerInfo); len(necessaryMatrixes) == 0 && ok {
 		wport := x.Port
