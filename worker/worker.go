@@ -1,3 +1,4 @@
+//clearCommitHistory
 package main
 
 import (
